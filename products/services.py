@@ -1,0 +1,6 @@
+def get_features(image):
+    ...
+
+def get_similar_products(features, count=5):
+    ...
+    #return qs
