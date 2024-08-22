@@ -1,7 +1,8 @@
-from django.core.management.base import BaseCommand
+import os
+
 import requests
 from bs4 import BeautifulSoup
-import os
+from django.core.management.base import BaseCommand
 
 from products.models import Product
 

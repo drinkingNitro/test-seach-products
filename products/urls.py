@@ -1,9 +1,10 @@
 from django.urls import path
 
-from .views import ListCreateProductsView, search_similar
+from .views import ListCreateProductsView, SimilarImagesAPIView
 
+app_name = 'products'
 
 urlpatterns = [
     path('', ListCreateProductsView.as_view(), name='products-lc'),
-    path('search/', search_similar, name='products-search')
+    path('search/', SimilarImagesAPIView.as_view(), name='products-search')
 ]

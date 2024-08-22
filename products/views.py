@@ -1,19 +1,19 @@
-from rest_framework.generics import ListCreateAPIView
-from rest_framework.response import Response
+import numpy as np
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.pagination import PageNumberPagination
-# from django.views.decorators.csrf import csrf_exempt
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from sklearn.metrics.pairwise import cosine_similarity
 
-from . import services
 from .models import Product
 from .serializers import ProductSerializer
+from .utils.image_features import extract_features
 
 
 class ProductPagination(PageNumberPagination):
-    page_size = 10  # Количество объектов на странице
-    # page_size_query_param = 'page_size'
-    # max_page_size = 100  # Максимальное количество объектов на странице
+    page_size = 10
 
 
 class ListCreateProductsView(ListCreateAPIView):
@@ -22,13 +22,27 @@ class ListCreateProductsView(ListCreateAPIView):
     pagination_class = ProductPagination
 
 
-# @csrf_exempt
-@api_view(['POST'])
-def search_similar(request):
-    file = request.Files
-    features = services.get_features(file)
-    similar_products = services.get_similar_products(features)
-    serializer = ProductSerializer(data=similar_products)
-    serializer.is_valid(raise_exception=True) # mb is not required since data comes from the DB
+class SimilarImagesAPIView(APIView):
+    parser_classes = [MultiPartParser]
 
-    return Response(data=serializer.validated_data, status=status.HTTP_200_OK)
+    def post(self, request, *args, **kwargs):
+        uploaded_image = request.FILES['image']
+        temp_image_path = 'temp_image.jpg'
+        
+        with open(temp_image_path, 'wb+') as temp_file:
+            for chunk in uploaded_image.chunks():
+                temp_file.write(chunk)
+
+        query_features = extract_features(temp_image_path)
+
+        products = Product.objects.exclude(image_features__isnull=True) # Add limit?
+        if not products:
+            return Response(data={'error': 'No qualified products found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        all_features = [np.frombuffer(product.image_features, dtype=np.float32) for product in products]
+
+        similarities = cosine_similarity([query_features], all_features)
+        similar_indices = similarities.argsort()[0][-5:][::-1]
+
+        similar_products = [products[int(index)] for index in similar_indices]
+        serializer = ProductSerializer(similar_products, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
