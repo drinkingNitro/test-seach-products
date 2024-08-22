@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     # Third-part
     'rest_framework',
+    'drf_spectacular',
 
     # Custom
     'products',
@@ -127,3 +128,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# DRF
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Search similar products API.',
+    'DESCRIPTION': 'An API that performs a search for similar products based on an attached image.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
